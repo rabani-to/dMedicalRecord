@@ -9,11 +9,12 @@ contract MedicalRecord {
     address public owner;
     mapping(address=> Doctor) public doctors;
     mapping(address=> Patient) private patients;
+    mapping(address=> Visit[]) public visits;
 
     struct Visit {
         Doctor doctor;
-        Patient patient;
         uint startVisit;
+        uint current;
         string sintoms;
         string diagnosis;
         string treatment;
@@ -31,16 +32,12 @@ contract MedicalRecord {
 
     struct Patient {
         address patient_address;
-        address doctor_address;
         uint time_of_visit;
         string phone_number;
         string id;
         string name;
         int bornDate;
-        Visit[] visits;
     }
-
-    event RequireMedicalRecord(Doctor doctor, string patient_id);
 
     constructor() payable {
         timeAvailable = 1 hours;
@@ -62,25 +59,22 @@ contract MedicalRecord {
         require (patients[msg.sender].patient_address == address(0));
         patients[msg.sender] = Patient({
             patient_address: msg.sender,
-            doctor_address: address(0),
             time_of_visit: 0,
             phone_number: _phone_number,
             id: _id,
             name: _name,
-            bornDate: _bornDate,
-            visits: new Visit[](0)
+            bornDate: _bornDate
         });
     }
 
     function createEntry(address _patient_id, string calldata _sintoms, string calldata _diagnosis, string calldata _treatment, string calldata _observations) public {
         require(doctors[msg.sender].doctor_address != address(0), "Only doctors can create entries");
         require(patients[_patient_id].patient_address != address(0), "patient does not exist");
-        require(patients[_patient_id].doctor_address == msg.sender, "You are not the doctor of this patient");
-        patients[_patient_id].doctor_address = address(0);
-        patients[_patient_id].visits.push(Visit({
+        require(visits[_patient_id][visits[_patient_id].length].current == 1, "You are not the doctor of the visit of this patient");
+        visits[_patient_id].push(Visit({
             doctor: doctors[msg.sender],
-            patient: patients[_patient_id],
             startVisit: block.timestamp,
+            current: 1,
             sintoms: _sintoms,
             diagnosis: _diagnosis,
             treatment: _treatment,
